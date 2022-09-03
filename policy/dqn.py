@@ -13,7 +13,7 @@ from policy.base import BasePolicy
 from common.utils import Softupdate
 
 #######################
-#DOUBLE DEEP Q-NETWORK.
+#DEEP Q-NETWORK.
 #######################
 #STATE-SPACE: Continuous
 #ACTION-SPACE: Discrete
@@ -41,7 +41,6 @@ class DQNPolicy(BasePolicy):
         self.critic = DQNLinear(self.state_dim,self.n_actions)
         self.critic_target = DQNLinear(self.state_dim,self.n_actions)
         self.critic_optim = optim.Adam(self.critic.parameters(),lr = self.lr)
-        # self.critic_optim = optim.RMSprop(self.critic.parameters(),lr=self.lr)
         Softupdate(tau=0,target=self.critic_target,current=self.critic)
 
     def reset_eps(self):
@@ -53,7 +52,7 @@ class DQNPolicy(BasePolicy):
     def test_mode(self):
         self.noise = False
 
-#GIVEN STATE OUTPUT AN ACTION ACCORDING TO CURRENT POLICY. RETURNS ACTION(Valid for gym).
+
     def act(self,state):
         if self.noise and np.random.rand()<=self.eps:
             action = np.random.choice(self.n_actions)
@@ -66,13 +65,12 @@ class DQNPolicy(BasePolicy):
 
         return action
 
-#UPDATE ACTOR AND CRITIC BASED ON SAMPLES DRAWN FROM ER BUFFER. RETURNS NOTHING.
+
     def learn(self,states,actions,rewards,next_states,dones):
 
         self.eps = max(self.eps_min,self.eps*self.eps_decay)
 
         currents = self.critic(states)
-        # targets = rewards + self.gamma*(1-dones)*self.critic_target(next_states).gather(1,torch.argmax(self.critic(next_states),dim=1).view(-1,1))
         targets = rewards + self.gamma*(1-dones)*torch.amax(self.critic_target(next_states),dim=1).view(-1,1)
 
         currents = currents.gather(1,actions.long())
